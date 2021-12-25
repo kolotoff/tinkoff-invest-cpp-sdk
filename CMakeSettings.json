@@ -1,0 +1,34 @@
+{
+  "environments": [
+    {
+      "BOOST_DIR": "d:\\Develop\\SDK\\Boost\\boost_1_78_0",
+      "OPENSSL_DIR": "d:\\Develop\\SDK\\OpenSSL\\openssl-1.1\\x64"
+    }
+  ],
+  "configurations": [
+    {
+      "name": "x64-Debug",
+      "generator": "Visual Studio 16 2019 Win64",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "environments": [],
+      "variables": [
+        {
+          "name": "BOOST_ROOT",
+          "value": "${env.BOOST_DIR}",
+          "type": "STRING"
+        },
+        {
+          "name": "OPENSSL_ROOT_DIR",
+          "value": "${env.OPENSSL_DIR}",
+          "type": "STRING"
+        }
+      ]
+    }
+  ]
+}

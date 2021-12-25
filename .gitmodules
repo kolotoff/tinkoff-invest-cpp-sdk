@@ -1,0 +1,12 @@
+[submodule "deps/grpc"]
+	path = deps/grpc
+	url = https://github.com/grpc/grpc.git
+	branch = v1.43.x
+[submodule "deps/investAPI"]
+	path = deps/investAPI
+	url = https://github.com/TinkoffCreditSystems/investAPI.git
+	branch = main
+[submodule "deps/asio-grpc"]
+	path = deps/asio-grpc
+	url = https://github.com/Tradias/asio-grpc.git
+	branch = master
