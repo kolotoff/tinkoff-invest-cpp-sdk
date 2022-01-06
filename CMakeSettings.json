@@ -31,17 +31,56 @@
         },
         {
           "name": "GRPC_ROOT",
-          "value": "${env.GRPC_DIR}",
+          "value": "${env.GRPC_DIR}_release",
           "type": "STRING"
         },
         {
           "name": "Protobuf_ROOT",
-          "value": "${env.GRPC_DIR}",
+          "value": "${env.GRPC_DIR}_release",
           "type": "STRING"
         },
         {
           "name": "absl_ROOT",
-          "value": "${env.GRPC_DIR}",
+          "value": "${env.GRPC_DIR}_release",
+          "type": "STRING"
+        }
+      ]
+    },
+    {
+      "name": "x64-Debug",
+      "generator": "Visual Studio 16 2019 Win64",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "environments": [],
+      "variables": [
+        {
+          "name": "BOOST_ROOT",
+          "value": "${env.BOOST_DIR}",
+          "type": "STRING"
+        },
+        {
+          "name": "OPENSSL_ROOT",
+          "value": "${env.OPENSSL_DIR}",
+          "type": "STRING"
+        },
+        {
+          "name": "GRPC_ROOT",
+          "value": "${env.GRPC_DIR}_debug",
+          "type": "STRING"
+        },
+        {
+          "name": "Protobuf_ROOT",
+          "value": "${env.GRPC_DIR}_debug",
+          "type": "STRING"
+        },
+        {
+          "name": "absl_ROOT",
+          "value": "${env.GRPC_DIR}_debug",
           "type": "STRING"
         }
       ]

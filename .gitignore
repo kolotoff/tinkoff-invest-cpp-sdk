@@ -33,4 +33,5 @@
 
 .vs
 /out
-/deps/grpc_build_msvc
+/deps/grpc_build_msvc_debug
+/deps/grpc_build_msvc_release
