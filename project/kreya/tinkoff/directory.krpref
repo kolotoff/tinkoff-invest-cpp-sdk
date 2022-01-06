@@ -1,0 +1,17 @@
+{
+  "settings": [
+    {
+      "options": {
+        "grpc": {
+          "endpoint": "https://invest-public-api.tinkoff.ru:443",
+          "metadata": [
+            {
+              "key": "Authorization",
+              "value": "Bearer place_your_token_here"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

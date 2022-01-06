@@ -2,14 +2,15 @@
   "environments": [
     {
       "BOOST_DIR": "d:\\Develop\\SDK\\Boost\\boost_1_78_0",
-      "OPENSSL_DIR": "d:\\Develop\\SDK\\OpenSSL\\openssl-1.1\\x64"
+      "OPENSSL_DIR": "d:\\Develop\\SDK\\OpenSSL\\openssl-1.1\\x64",
+      "GRPC_DIR": "d:\\Develop\\Sources\\AlcoTrader\\tinkoff-invest-cpp-sdk\\deps\\grpc_build_msvc"
     }
   ],
   "configurations": [
     {
-      "name": "x64-Debug",
+      "name": "x64-Release",
       "generator": "Visual Studio 16 2019 Win64",
-      "configurationType": "Debug",
+      "configurationType": "Release",
       "inheritEnvironments": [ "msvc_x64_x64" ],
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
@@ -24,8 +25,23 @@
           "type": "STRING"
         },
         {
-          "name": "OPENSSL_ROOT_DIR",
+          "name": "OPENSSL_ROOT",
           "value": "${env.OPENSSL_DIR}",
+          "type": "STRING"
+        },
+        {
+          "name": "GRPC_ROOT",
+          "value": "${env.GRPC_DIR}",
+          "type": "STRING"
+        },
+        {
+          "name": "Protobuf_ROOT",
+          "value": "${env.GRPC_DIR}",
+          "type": "STRING"
+        },
+        {
+          "name": "absl_ROOT",
+          "value": "${env.GRPC_DIR}",
           "type": "STRING"
         }
       ]
