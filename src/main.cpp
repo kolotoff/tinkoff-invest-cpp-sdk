@@ -1,5 +1,5 @@
 #include "helper/helper.hpp"
-#include "protos/helloworld.grpc.pb.h"
+#include "protos/users.grpc.pb.h"
 
 
 #include <agrpc/asioGrpc.hpp>
@@ -8,33 +8,43 @@
 #include <grpcpp/client_context.h>
 #include <grpcpp/create_channel.h>
 
+using namespace tinkoff::invest::api;
+
 int main(int argc, const char** argv)
 {
-    const auto port = 443
-    const auto host = "invest-public-api.tinkoff.ru";
+  const auto port = 443;
+  const auto host = "invest-public-api.tinkoff.ru";
 
-    grpc::Status status;
+  grpc::Status status;
 
-    // begin-snippet: client-side-helloworld
-    const auto stub = helloworld::Greeter::NewStub(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
-    agrpc::GrpcContext grpc_context{std::make_unique<grpc::CompletionQueue>()};
+  static std::string token = "Bearer t.";
 
-    boost::asio::co_spawn(
-        grpc_context,
-        [&]() -> boost::asio::awaitable<void>
-        {
-            grpc::ClientContext client_context;
-            helloworld::HelloRequest request;
-            request.set_name("world");
-            std::unique_ptr<grpc::ClientAsyncResponseReader<helloworld::HelloReply>> reader =
-                stub->AsyncSayHello(&client_context, request, agrpc::get_completion_queue(grpc_context));
-            helloworld::HelloReply response;
-            co_await agrpc::finish(*reader, response, status);
-        },
-        boost::asio::detached);
+  grpc::SslCredentialsOptions ssl_options;
+  ssl_options.pem_root_certs = SERVER_CRT;
 
-    grpc_context.run();
-    // end-snippet
+  auto channel_credentials = grpc::SslCredentials(ssl_options);
+  
+  const auto stub = contract::v1::UsersService::NewStub(grpc::CreateChannel(host, channel_credentials));
+  agrpc::GrpcContext grpc_context{std::make_unique<grpc::CompletionQueue>()};
+  
 
-    abort_if_not(status.ok());
+  boost::asio::co_spawn(
+    grpc_context,
+    [&]() -> boost::asio::awaitable<void>
+    {
+      grpc::ClientContext client_context;
+      client_context.AddMetadata("Authorization", token);
+      contract::v1::GetAccountsRequest request;
+      std::unique_ptr<grpc::ClientAsyncResponseReader<contract::v1::GetAccountsResponse>> reader =
+        stub->AsyncGetAccounts(&client_context, request, agrpc::get_completion_queue(grpc_context));
+
+      contract::v1::GetAccountsResponse response;
+      co_await agrpc::finish(*reader, response, status);
+    },
+    boost::asio::detached);
+
+  grpc_context.run();
+  // end-snippet
+
+  abort_if_not(status.ok());
 }
