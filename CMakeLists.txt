@@ -3,7 +3,6 @@ cmake_minimum_required (VERSION 3.20)
 project("tinkoff-invest-cpp-sdk" LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_BUILD_TYPE Release)
 
 if(MSVC)
     set(Protobuf_USE_STATIC_LIBS ON)
@@ -16,7 +15,6 @@ find_package(gRPC CONFIG REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${Protobuf_INCLUDE_DIR})
-include_directories("${CMAKE_CURRENT_BINARY_DIR}/")
 
 message("PROTOBUF Found: ${Protobuf_FOUND} ${Protobuf_VERSION}")
 
@@ -30,6 +28,10 @@ if(MSVC)
     add_compile_options(/bigobj)
     add_compile_options(/EHsc)
     add_compile_options(/MP)
+
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
+    set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /ignore:4099")
 endif()
 
 add_library(protos-compile-options OBJECT)
@@ -59,16 +61,16 @@ target_compile_definitions(
               WINVER=0x0A00
               BOOST_ASIO_NO_DEPRECATED)
 
-set(VAR_GENERATED_PROTOS_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/")
-set(VAR_GENERATED_PROTOS_OUT_DIR "${VAR_GENERATED_PROTOS_INCLUDE_DIR}/protos")
+set(GENERATED_PROTOS_OUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/protos")
+
+include(cmake/InvestApiProtosList.cmake)
 
 asio_grpc_protobuf_generate(
     GENERATE_GRPC
     TARGET protos-compile-options
-    OUT_VAR OUT_VAR_GENERATED_SOURCES
-    OUT_DIR "${VAR_GENERATED_PROTOS_OUT_DIR}"
-    PROTOS "${CMAKE_CURRENT_SOURCE_DIR}/src/protos/helloworld.proto"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/protos/example.proto")
+    OUT_VAR GENERATED_PROTOS_SOURCES
+    OUT_DIR "${GENERATED_PROTOS_OUT_DIR}"
+    PROTOS ${InvestApiProtos})
 
 add_executable(${PROJECT_NAME})
 
