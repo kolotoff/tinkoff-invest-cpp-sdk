@@ -63,7 +63,10 @@ target_compile_definitions(
 
 set(GENERATED_PROTOS_OUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/protos")
 
-include(cmake/InvestApiProtosList.cmake)
+include(cmake/GetInvestApiProtosList.cmake)
+
+#set(InvestApiProtosOutDir "${CMAKE_SOURCE_DIR}/src/protos")
+#file(GLOB InvestApiProtos "${InvestApiProtosOutDir}/*.proto")
 
 asio_grpc_protobuf_generate(
     GENERATE_GRPC
@@ -71,6 +74,8 @@ asio_grpc_protobuf_generate(
     OUT_VAR GENERATED_PROTOS_SOURCES
     OUT_DIR "${GENERATED_PROTOS_OUT_DIR}"
     PROTOS ${InvestApiProtos})
+
+include(cmake/RestoreProtosPackagePublicKeyword.cmake)
 
 add_executable(${PROJECT_NAME})
 
