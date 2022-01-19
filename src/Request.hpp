@@ -1,6 +1,8 @@
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
 
+#include <google/protobuf/util/json_util.h>
+
 #include <agrpc/asioGrpc.hpp>
 
 #include <Credentials.hpp>
@@ -54,13 +56,36 @@ public:
 
     std::cout << request.FullMessageName() << std::endl;
 
+    auto makePrintOptions = []
+    {
+      google::protobuf::util::JsonPrintOptions options;
+      options.add_whitespace = true;
+      options.always_print_primitive_fields = true;
+      options.always_print_enums_as_ints = false;
+      options.preserve_proto_field_names = true;
+      return options;
+    };
+
+    //Can't use initializer-list due existing constructor
+    static const auto options = makePrintOptions();
+
+    std::string json;
+    google::protobuf::util::MessageToJsonString(request, &json, options);
+    std::cout << json << std::endl;
+
     printMetadata();
     extractMetadata(result.limits, result.trackingId);
-
+ 
     if (!result.status.ok())
     {
       std::cout << "Error " << std::dec << result.status.error_code() << ": " << result.status.error_message() << "; "
         << result.status.error_details();
+    }
+    else
+    {   
+      json.clear();
+      google::protobuf::util::MessageToJsonString(result.response, &json, options);
+      std::cout << std::endl << "Response: " << std::endl << json << std::endl;
     }
     
     co_return result;
@@ -69,7 +94,7 @@ public:
 
   void printMetadata()
   {
-    std::cout << "metadata: " << std::endl;
+    std::cout << "Metadata: " << std::endl;
     printMetadata(clientContext_.GetServerInitialMetadata());
   }
 

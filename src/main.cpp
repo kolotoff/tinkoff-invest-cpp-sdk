@@ -14,6 +14,10 @@
 
 int main(int /*argc*/, const char** /*argv*/)
 {
+#ifdef _WIN32
+  SetConsoleOutputCP(CP_UTF8);
+#endif
+
   using namespace tinkoff::Public::invest::api;
 
   const auto host = "invest-public-api.tinkoff.ru:443";
