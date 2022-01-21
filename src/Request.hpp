@@ -12,7 +12,6 @@ class Request
 {
 public:
   using Stub = Service::Stub;
-  using ExecutionContext = agrpc::GrpcContext;
   template <class Response>
   using Reader = std::unique_ptr<grpc::ClientAsyncResponseReader<Response>>;
 
@@ -34,8 +33,7 @@ public:
   };
 
 public:
-  Request(ExecutionContext& executionContext, const Credentials& credentials)
-    : executionContext_(executionContext)
+  Request(const Credentials& credentials)
   {
     clientContext_.AddMetadata("authorization", "Bearer " + credentials.token());
     clientContext_.AddMetadata("x-app-name", "kolotoff.tinkoff-invest-cpp-sdk");
@@ -50,13 +48,15 @@ public:
   {
     Result<Response> result;
 
-    auto reader = ((*stub).*method)(&clientContext_, request, agrpc::get_completion_queue(executionContext_));
+    const auto executor = co_await boost::asio::this_coro::executor;
+    auto reader = ((*stub).*method)(&clientContext_, request, agrpc::get_completion_queue(executor));
     co_await agrpc::finish(*reader, result.response, result.status);
 
 
     std::cout << request.FullMessageName() << std::endl;
 
-    auto makePrintOptions = []
+    //Can't use initializer-list due existing constructor
+    static const auto printOptions = []
     {
       google::protobuf::util::JsonPrintOptions options;
       options.add_whitespace = true;
@@ -64,13 +64,10 @@ public:
       options.always_print_enums_as_ints = false;
       options.preserve_proto_field_names = true;
       return options;
-    };
-
-    //Can't use initializer-list due existing constructor
-    static const auto options = makePrintOptions();
+    }();
 
     std::string json;
-    google::protobuf::util::MessageToJsonString(request, &json, options);
+    google::protobuf::util::MessageToJsonString(request, &json, printOptions);
     std::cout << json << std::endl;
 
     printMetadata();
@@ -84,7 +81,7 @@ public:
     else
     {   
       json.clear();
-      google::protobuf::util::MessageToJsonString(result.response, &json, options);
+      google::protobuf::util::MessageToJsonString(result.response, &json, printOptions);
       std::cout << std::endl << "Response: " << std::endl << json << std::endl;
     }
     
@@ -161,7 +158,6 @@ private:
   }
 
 private:
-  ExecutionContext& executionContext_;
   grpc::ClientContext clientContext_ {};
   
 };

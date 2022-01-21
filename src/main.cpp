@@ -29,7 +29,7 @@ int main(int /*argc*/, const char** /*argv*/)
   }
   agrpc::GrpcContext grpc_context{ std::make_unique<grpc::CompletionQueue>() };
 
-  Request<contract::v1::UsersService> testRequest(grpc_context, credentials);
+  
 
   int errorCode = 0;
 
@@ -42,9 +42,19 @@ int main(int /*argc*/, const char** /*argv*/)
 
   boost::asio::co_spawn(grpc_context, [&]() -> boost::asio::awaitable<void>
   {
-    contract::v1::GetAccountsRequest request;
-    auto result = co_await testRequest.execute(stub, &contract::v1::UsersService::Stub::AsyncGetAccounts, request);
-    errorCode = result.status.error_code();
+    {
+      Request<contract::v1::UsersService> testRequest(credentials);
+      contract::v1::GetAccountsRequest request;
+      auto result = co_await testRequest.execute(stub, &contract::v1::UsersService::Stub::AsyncGetAccounts, request);
+      errorCode = result.status.error_code();
+    }
+    
+    {
+      Request<contract::v1::UsersService> testRequest(credentials);
+      contract::v1::GetUserTariffRequest request;
+      auto result = co_await testRequest.execute(stub, &contract::v1::UsersService::Stub::AsyncGetUserTariff, request);
+      errorCode = result.status.error_code();
+    }
   },
   boost::asio::detached);
 
