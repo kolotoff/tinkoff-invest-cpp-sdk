@@ -10,7 +10,7 @@
 #include <grpcpp/create_channel.h>
 
 #include <Credentials.hpp>
-#include <Request.hpp>
+#include <Service.hpp>
 
 int main(int /*argc*/, const char** /*argv*/)
 {
@@ -20,45 +20,35 @@ int main(int /*argc*/, const char** /*argv*/)
 
   using namespace tinkoff::Public::invest::api;
 
-  const auto host = "invest-public-api.tinkoff.ru:443";
-
   Credentials credentials;
   if (!credentials.load())
   {
     return -1;
   }
-  agrpc::GrpcContext grpc_context{ std::make_unique<grpc::CompletionQueue>() };
-
-  
+  agrpc::GrpcContext grpcExecutionContext { std::make_unique<grpc::CompletionQueue>() };
 
   int errorCode = 0;
 
-  grpc::SslCredentialsOptions ssl_options;
-  ssl_options.pem_root_certs = credentials.certs();
+  using UsersService = Service<contract::v1::UsersService>;
+  UsersService usersService(credentials);
 
-  auto channel_credentials = grpc::SslCredentials(ssl_options);
-  
-  const auto stub = contract::v1::UsersService::NewStub(grpc::CreateChannel(host, channel_credentials));
 
-  boost::asio::co_spawn(grpc_context, [&]() -> boost::asio::awaitable<void>
+  boost::asio::co_spawn(grpcExecutionContext, [&]() -> boost::asio::awaitable<void>
   {
     {
-      Request<contract::v1::UsersService> testRequest(credentials);
-      contract::v1::GetAccountsRequest request;
-      auto result = co_await testRequest.execute(stub, &contract::v1::UsersService::Stub::AsyncGetAccounts, request);
+      auto result = co_await usersService.execute(&UsersService::Method::AsyncGetAccounts, {});
       errorCode = result.status.error_code();
     }
     
     {
-      Request<contract::v1::UsersService> testRequest(credentials);
-      contract::v1::GetUserTariffRequest request;
-      auto result = co_await testRequest.execute(stub, &contract::v1::UsersService::Stub::AsyncGetUserTariff, request);
+      auto request = usersService.makeRequest(&contract::v1::UsersService::Stub::AsyncGetUserTariff);
+      auto result = co_await usersService.execute(&contract::v1::UsersService::Stub::AsyncGetUserTariff, request);
       errorCode = result.status.error_code();
     }
   },
   boost::asio::detached);
 
-  grpc_context.run();
+  grpcExecutionContext.run();
 
   return errorCode;
 }

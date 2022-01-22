@@ -1,5 +1,5 @@
-#ifndef REQUEST_HPP
-#define REQUEST_HPP
+#ifndef SERVICE_HPP
+#define SERVICE_HPP
 
 #include <google/protobuf/util/json_util.h>
 
@@ -7,11 +7,13 @@
 
 #include <Credentials.hpp>
 
-template <class Service>
-class Request
+
+template <class GprcService>
+class Service
 {
 public:
-  using Stub = Service::Stub;
+  using Method = GprcService::Stub;
+
   template <class Response>
   using Reader = std::unique_ptr<grpc::ClientAsyncResponseReader<Response>>;
 
@@ -33,23 +35,40 @@ public:
   };
 
 public:
-  Request(const Credentials& credentials)
+  Service(const Credentials& credentials)
+    : credentials_(credentials)
   {
-    clientContext_.AddMetadata("authorization", "Bearer " + credentials.token());
-    clientContext_.AddMetadata("x-app-name", "kolotoff.tinkoff-invest-cpp-sdk");
+    static const auto host = "invest-public-api.tinkoff.ru:443";
+
+    grpc::SslCredentialsOptions sslOptions;
+    sslOptions.pem_root_certs = credentials.certs();
+
+    auto sslCredentials = grpc::SslCredentials(sslOptions);
+
+    stub_ = GprcService::NewStub(grpc::CreateChannel(host, sslCredentials));
   }
 
-  ~Request() = default;
+  ~Service() = default;
 
   template<class TRequest, class Response>
-  boost::asio::awaitable<Result<Response>> execute(const std::unique_ptr<Stub>& stub
-    , Reader<Response>(Stub::* method)(grpc::ClientContext* context, const TRequest& request, grpc::CompletionQueue*)
-    , TRequest& request)
+  TRequest makeRequest(Reader<Response>(Method::*)(grpc::ClientContext*, const TRequest&, grpc::CompletionQueue*))
+  {
+    TRequest request;
+    return request;
+  }
+
+  template<class TRequest, class Response>
+  boost::asio::awaitable<Result<Response>> execute(Reader<Response>(Method::*method)(grpc::ClientContext*, const TRequest&, grpc::CompletionQueue*)
+    , const TRequest& request)
   {
     Result<Response> result;
 
+    grpc::ClientContext clientContext;
+    clientContext.AddMetadata("authorization", "Bearer " + credentials_.token());
+    clientContext.AddMetadata("x-app-name", "kolotoff.tinkoff-invest-cpp-sdk");
+
     const auto executor = co_await boost::asio::this_coro::executor;
-    auto reader = ((*stub).*method)(&clientContext_, request, agrpc::get_completion_queue(executor));
+    auto reader = ((*stub_).*method)(&clientContext, request, agrpc::get_completion_queue(executor));
     co_await agrpc::finish(*reader, result.response, result.status);
 
 
@@ -70,36 +89,30 @@ public:
     google::protobuf::util::MessageToJsonString(request, &json, printOptions);
     std::cout << json << std::endl;
 
-    printMetadata();
-    extractMetadata(result.limits, result.trackingId);
- 
+    std::cout << "Metadata: " << std::endl;
+    printMetadata(clientContext.GetServerInitialMetadata());
+
+    extractMetadata(clientContext, result.limits, result.trackingId);
+
     if (!result.status.ok())
     {
       std::cout << "Error " << std::dec << result.status.error_code() << ": " << result.status.error_message() << "; "
         << result.status.error_details();
     }
     else
-    {   
+    {
       json.clear();
       google::protobuf::util::MessageToJsonString(result.response, &json, printOptions);
       std::cout << std::endl << "Response: " << std::endl << json << std::endl;
     }
-    
+
     co_return result;
   }
 
-
-  void printMetadata()
-  {
-    std::cout << "Metadata: " << std::endl;
-    printMetadata(clientContext_.GetServerInitialMetadata());
-  }
-
 private:
-
-  void extractMetadata(Limits& limits, std::string& trackingId)
+  void extractMetadata(grpc::ClientContext& context, Limits& limits, std::string& trackingId)
   {
-    auto& metadata = clientContext_.GetServerInitialMetadata();
+    auto& metadata = context.GetServerInitialMetadata();
 
     auto extractInt = [&](const std::string& key, int& destination)
     {
@@ -112,7 +125,7 @@ private:
           destination = std::atoi(iterator->second.data());
         }
       }
-      catch (...) { }
+      catch (...) {}
     };
 
     auto extractString = [&](const std::string& key, std::string& destination)
@@ -158,8 +171,9 @@ private:
   }
 
 private:
-  grpc::ClientContext clientContext_ {};
-  
+  const Credentials& credentials_;
+  std::unique_ptr<Method> stub_;
+
 };
 
-#endif // !REQUEST_HPP
+#endif // !SERVICE_HPP
