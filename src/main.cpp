@@ -32,7 +32,6 @@ int main(int /*argc*/, const char** /*argv*/)
   using UsersService = Service<contract::v1::UsersService>;
   UsersService usersService(credentials);
 
-
   boost::asio::co_spawn(grpcExecutionContext, [&]() -> boost::asio::awaitable<void>
   {
     {
@@ -41,8 +40,9 @@ int main(int /*argc*/, const char** /*argv*/)
     }
     
     {
-      auto request = usersService.makeRequest(&contract::v1::UsersService::Stub::AsyncGetUserTariff);
-      auto result = co_await usersService.execute(&contract::v1::UsersService::Stub::AsyncGetUserTariff, request);
+      auto method = &UsersService::Method::AsyncGetUserTariff;
+      auto request = usersService.makeRequest(method);
+      auto result = co_await usersService.execute(method, request);
       errorCode = result.status.error_code();
     }
   },
