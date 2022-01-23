@@ -58,13 +58,6 @@ public:
   }
 
   template<class TRequest, class Response>
-  TRequest makeRequest(Reader<Response>(Method::*)(grpc::ClientContext*, const TRequest&, grpc::CompletionQueue*))
-  {
-    TRequest request;
-    return request;
-  }
-
-  template<class TRequest, class Response>
   boost::asio::awaitable<Result<Response>> execute(Reader<Response>(Method::*method)(grpc::ClientContext*, const TRequest&, grpc::CompletionQueue*)
     , const TRequest& request)
   {
