@@ -6,7 +6,7 @@
 
 class Credentials
 {
-  enum { MinimalFileSize = 20 };
+  enum { MinimalFileSize = 8 };
 
 public:
   Credentials() = default;
@@ -14,11 +14,13 @@ public:
 
   const std::string& certs() const { return certs_; }
   const std::string& token() const { return token_; }
+  const std::string& account() const { return account_; }
 
   bool load()
   {
     const std::string rootCertFilePath = "roots.pem";
     const std::string tokenFilePath = "token.txt";
+    const std::string accountFilePath = "account.txt";
 
     if (!readFile(rootCertFilePath, certs_))
     {
@@ -26,6 +28,11 @@ public:
     }
 
     if (!readFile(tokenFilePath, token_))
+    {
+      return false;
+    }
+
+    if (!readFile(accountFilePath, account_))
     {
       return false;
     }
@@ -56,6 +63,7 @@ private:
 private:
   std::string certs_;
   std::string token_;
+  std::string account_;
 };
 
 
