@@ -48,6 +48,9 @@ int main(int /*argc*/, const char** /*argv*/)
   },
   boost::asio::detached);
 
+  static const std::string testFigi = "BBG000B9XRY4"; //Apple
+  //static const std::string testFigi = "BBG004S68CP5"; //MVID
+
   grpcExecutionContext.run();
 
   return errorCode;
