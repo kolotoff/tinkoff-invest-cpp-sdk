@@ -72,7 +72,7 @@ public:
   template<class Request>
   inline static void logRequest(const Request& request)
   {
-    std::cout << request.FullMessageName() << std::endl;
+    std::cout << request.GetTypeName() << std::endl;
     std::cout << messageToString(request) << std::endl;
   }
 

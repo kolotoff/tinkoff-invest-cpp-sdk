@@ -2,6 +2,7 @@
 #include <fstream>
 
 #include "protos/users.grpc.pb.h"
+#include "protos/marketdata.grpc.pb.h"
 
 #include <agrpc/asioGrpc.hpp>
 #include <boost/asio/co_spawn.hpp>
@@ -11,6 +12,7 @@
 
 #include <Credentials.hpp>
 #include <Service.hpp>
+#include <StreamingService.hpp>
 
 int main(int /*argc*/, const char** /*argv*/)
 {
@@ -32,6 +34,9 @@ int main(int /*argc*/, const char** /*argv*/)
   using UsersService = Service<contract::v1::UsersService>;
   UsersService usersService(credentials);
 
+  using MarketDataStreamService = StreamingService<contract::v1::MarketDataStreamService>;
+  MarketDataStreamService marketDataStreamService(credentials);
+
   boost::asio::co_spawn(grpcExecutionContext, [&]() -> boost::asio::awaitable<void>
   {
     {
@@ -45,11 +50,25 @@ int main(int /*argc*/, const char** /*argv*/)
       auto result = co_await usersService.execute(method, request);
       errorCode = result.status.error_code();
     }
+
+    {
+      static const std::string appleFigi = "BBG000B9XRY4"; //Apple
+      static const std::string mvideoFigi = "BBG004S68CP5"; //MVID
+
+      auto method = &MarketDataStreamService::Method::AsyncMarketDataStream;
+      auto request = marketDataStreamService.makeRequest(method);
+
+      auto candlesRequest = request.mutable_subscribe_candles_request();
+      candlesRequest->set_subscription_action(contract::v1::SubscriptionAction::SUBSCRIPTION_ACTION_SUBSCRIBE);
+      auto instrument = candlesRequest->add_instruments();
+      instrument->set_figi(appleFigi);
+      instrument->set_interval(contract::v1::SubscriptionInterval::SUBSCRIPTION_INTERVAL_ONE_MINUTE);
+
+      auto result = co_await marketDataStreamService.start(method, request);
+      errorCode = result.status.error_code();
+    }
   },
   boost::asio::detached);
-
-  static const std::string testFigi = "BBG000B9XRY4"; //Apple
-  //static const std::string testFigi = "BBG004S68CP5"; //MVID
 
   grpcExecutionContext.run();
 
