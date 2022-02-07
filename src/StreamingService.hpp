@@ -71,9 +71,6 @@ public:
     co_await agrpc::writes_done(*stream);
     bool finishOk = co_await agrpc::finish(*stream, result.status);
 
-    //auto stream = ((*stub_).*method)(clientContext.get(), request, agrpc::get_completion_queue(executor));
-    //co_await agrpc::request(*stream, result.response, result.status);
-
     GprcUtil::logRequest(request);
     GprcUtil::populateResult(result, clientContext);
     GprcUtil::logResult(result);

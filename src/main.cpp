@@ -54,15 +54,26 @@ int main(int /*argc*/, const char** /*argv*/)
     {
       static const std::string appleFigi = "BBG000B9XRY4"; //Apple
       static const std::string mvideoFigi = "BBG004S68CP5"; //MVID
+      static const std::string spyf3_22 = "FUTSPYF03220"; //SPYF-3.22
 
       auto method = &MarketDataStreamService::Method::AsyncMarketDataStream;
       auto request = marketDataStreamService.makeRequest(method);
 
       auto candlesRequest = request.mutable_subscribe_candles_request();
       candlesRequest->set_subscription_action(contract::v1::SubscriptionAction::SUBSCRIPTION_ACTION_SUBSCRIBE);
-      auto instrument = candlesRequest->add_instruments();
-      instrument->set_figi(appleFigi);
-      instrument->set_interval(contract::v1::SubscriptionInterval::SUBSCRIPTION_INTERVAL_ONE_MINUTE);
+      
+      {
+        auto instrument = candlesRequest->add_instruments();
+        instrument->set_figi(spyf3_22);
+        instrument->set_interval(contract::v1::SubscriptionInterval::SUBSCRIPTION_INTERVAL_ONE_MINUTE);
+      }
+
+      {
+        auto instrument = candlesRequest->add_instruments();
+        instrument->set_figi(appleFigi);
+        instrument->set_interval(contract::v1::SubscriptionInterval::SUBSCRIPTION_INTERVAL_ONE_MINUTE);
+      }
+      
 
       auto result = co_await marketDataStreamService.start(method, request);
       errorCode = result.status.error_code();

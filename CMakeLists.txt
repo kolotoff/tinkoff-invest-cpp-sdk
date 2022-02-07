@@ -19,7 +19,6 @@ include_directories(${Protobuf_INCLUDE_DIR})
 message("PROTOBUF Found: ${Protobuf_FOUND} ${Protobuf_VERSION}")
 
 add_subdirectory(deps/asio-grpc)
-include(deps/asio-grpc/cmake/AsioGrpcProtobufGenerator.cmake)
 include(deps/asio-grpc/cmake/AsioGrpcCompileOptions.cmake)
 
 include_directories("src") 
@@ -34,10 +33,10 @@ if(MSVC)
     set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /ignore:4099")
 endif()
 
-add_library(protos-compile-options OBJECT)
+add_library(protos OBJECT)
 
 target_compile_options(
-    protos-compile-options
+    protos
     INTERFACE $<$<CXX_COMPILER_ID:MSVC>:
               /external:I
               $<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
@@ -50,7 +49,7 @@ target_compile_options(
               $<$<CXX_COMPILER_ID:Clang>:-Wno-self-move>)
 
 target_compile_definitions(
-    protos-compile-options
+    protos
     INTERFACE $<$<CXX_COMPILER_ID:MSVC>:
               BOOST_ASIO_HAS_DEDUCED_REQUIRE_MEMBER_TRAIT
               BOOST_ASIO_HAS_DEDUCED_EXECUTE_MEMBER_TRAIT
@@ -65,13 +64,11 @@ set(GENERATED_PROTOS_OUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/protos")
 
 include(cmake/GetInvestApiProtosList.cmake)
 
-#set(InvestApiProtosOutDir "${CMAKE_SOURCE_DIR}/src/protos")
-#file(GLOB InvestApiProtos "${InvestApiProtosOutDir}/*.proto")
+include(cmake/GrpcProtobufGenerate.cmake)
 
-asio_grpc_protobuf_generate(
+grpc_protobuf_generate(
     GENERATE_GRPC
-    TARGET protos-compile-options
-    OUT_VAR GENERATED_PROTOS_SOURCES
+    TARGET protos
     OUT_DIR "${GENERATED_PROTOS_OUT_DIR}"
     PROTOS ${InvestApiProtos})
 
@@ -88,7 +85,7 @@ if(MSVC)
     set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/INCREMENTAL")
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE protos-compile-options)
+target_link_libraries(${PROJECT_NAME} PRIVATE protos)
 target_link_libraries(${PROJECT_NAME} PRIVATE gRPC::grpc++ gRPC::grpc++_reflection)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 target_link_libraries(${PROJECT_NAME} PRIVATE asio-grpc::asio-grpc)
