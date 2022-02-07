@@ -19,7 +19,6 @@ include_directories(${Protobuf_INCLUDE_DIR})
 message("PROTOBUF Found: ${Protobuf_FOUND} ${Protobuf_VERSION}")
 
 add_subdirectory(deps/asio-grpc)
-include(deps/asio-grpc/cmake/AsioGrpcCompileOptions.cmake)
 
 include_directories("src") 
 
@@ -33,10 +32,10 @@ if(MSVC)
     set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /ignore:4099")
 endif()
 
-add_library(protos OBJECT)
+add_library(tinkoff_api_protos OBJECT)
 
 target_compile_options(
-    protos
+    tinkoff_api_protos
     INTERFACE $<$<CXX_COMPILER_ID:MSVC>:
               /external:I
               $<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
@@ -49,7 +48,7 @@ target_compile_options(
               $<$<CXX_COMPILER_ID:Clang>:-Wno-self-move>)
 
 target_compile_definitions(
-    protos
+    tinkoff_api_protos
     INTERFACE $<$<CXX_COMPILER_ID:MSVC>:
               BOOST_ASIO_HAS_DEDUCED_REQUIRE_MEMBER_TRAIT
               BOOST_ASIO_HAS_DEDUCED_EXECUTE_MEMBER_TRAIT
@@ -68,24 +67,53 @@ include(cmake/GrpcProtobufGenerate.cmake)
 
 grpc_protobuf_generate(
     GENERATE_GRPC
-    TARGET protos
+    TARGET tinkoff_api_protos
     OUT_DIR "${GENERATED_PROTOS_OUT_DIR}"
     PROTOS ${InvestApiProtos})
 
 include(cmake/RestoreProtosPackagePublicKeyword.cmake)
 
-add_executable(${PROJECT_NAME})
+function(tinkoff_invest_sdk_add_credentials_files out_folder)
+    set(rootCertFileName "roots.pem")
+    set(tokenFileName "token.txt")
+    set(accountFileName "account.txt")
 
-target_sources(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp")
+    if(NOT EXISTS "${out_folder}/${rootCertFileName}")
+        file(COPY "${GRPC_ROOT}/share/grpc/${rootCertFileName}" DESTINATION ${out_folder})
+    endif()
 
-if(MSVC)
-    set(OPENSSL_PATH_STR ${OPENSSL_ROOT_DIR}/bin)
-    set(PATH_STR "PATH=%PATH%" ${OPENSSL_PATH_STR})
-    set_target_properties(${PROJECT_NAME} PROPERTIES VS_DEBUGGER_ENVIRONMENT "${PATH_STR}")
-    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/INCREMENTAL")
-endif()
+    if(NOT EXISTS "${out_folder}/${tokenFileName}")
+        file(WRITE "${out_folder}/${tokenFileName}" "place_your_t_token_here")
+    endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE protos)
-target_link_libraries(${PROJECT_NAME} PRIVATE gRPC::grpc++ gRPC::grpc++_reflection)
-target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
-target_link_libraries(${PROJECT_NAME} PRIVATE asio-grpc::asio-grpc)
+    if(NOT EXISTS "${out_folder}/${accountFileName}")
+        file(WRITE "${out_folder}/${accountFileName}" "place_your_account_id_here")
+    endif()
+endfunction()
+
+function(tinkoff_invest_sdk_add_example example_name)
+    add_executable(${example_name})
+
+    target_sources(${example_name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/examples/${example_name}.cpp")
+
+    if(MSVC)
+        set(OPENSSL_PATH_STR ${OPENSSL_ROOT_DIR}/bin)
+        set(PATH_STR "PATH=%PATH%" ${OPENSSL_PATH_STR})
+        set_target_properties(${example_name} PROPERTIES VS_DEBUGGER_ENVIRONMENT "${PATH_STR}")
+        set_target_properties(${example_name} PROPERTIES LINK_FLAGS "/INCREMENTAL")
+
+        #For MSVC avoid default /Debug or /Release created folder
+        set_target_properties(${example_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_BINARY_DIR})
+    endif()
+
+    target_link_libraries(${example_name} PRIVATE tinkoff_api_protos)
+    target_link_libraries(${example_name} PRIVATE gRPC::grpc++ gRPC::grpc++_reflection)
+    target_link_libraries(${example_name} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+    target_link_libraries(${example_name} PRIVATE asio-grpc::asio-grpc)
+endfunction()
+
+tinkoff_invest_sdk_add_credentials_files(${CMAKE_CURRENT_BINARY_DIR})
+
+tinkoff_invest_sdk_add_example(GetAccountsExample)
+tinkoff_invest_sdk_add_example(GetUserTariffExample)
+tinkoff_invest_sdk_add_example(MarketDataStreamExample)

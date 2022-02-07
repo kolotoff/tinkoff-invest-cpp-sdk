@@ -18,7 +18,7 @@ grpc_protobuf_generate(PROTOS <proto_file1> [<proto_file2>...]
 ``PROTOS``
     ``.proto`` files
 ``OUT_DIR``
-    Generated files output directory. Default: CMAKE_CURRENT_BINARY_DIR
+    Generated files output directory
 ``TARGET``
     Add generated source files to target.
 ``USAGE_REQUIREMENT``
