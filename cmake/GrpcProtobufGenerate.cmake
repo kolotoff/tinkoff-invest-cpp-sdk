@@ -47,12 +47,12 @@ function(grpc_protobuf_generate)
                           "${_asio_grpc_multiargs}" "${ARGN}")
 
     if(NOT grpc_protobuf_generate_PROTOS)
-        message(SEND_ERROR "grpc_protobuf_generate called without any proto files: PROTOS")
+        message(FATAL_ERROR "grpc_protobuf_generate called without any proto files: PROTOS")
         return()
     endif()
 
     if(NOT grpc_protobuf_generate_OUT_DIR)
-        message(SEND_ERROR "grpc_protobuf_generate called without OUT_DIR")
+        message(FATAL_ERROR "grpc_protobuf_generate called without OUT_DIR")
         return()
     endif()
 
@@ -118,11 +118,17 @@ function(grpc_protobuf_generate)
             )
         endif()
         list(APPEND _asio_grpc_command_arguments ${grpc_protobuf_generate_EXTRA_ARGS} "${_asio_grpc_abs_file}")
-        string(REPLACE ";" " " _asio_grpc_pretty_command_arguments "${_asio_grpc_command_arguments}")
  
         message("Generate GRPC ${_asio_grpc_proto}")    
 
-        execute_process(COMMAND ${Protobuf_PROTOC_EXECUTABLE} ${_asio_grpc_command_arguments})
+        execute_process(COMMAND ${Protobuf_PROTOC_EXECUTABLE} ${_asio_grpc_command_arguments} 
+            RESULT_VARIABLE return_code
+        )
+
+        if(NOT return_code EQUAL "0")
+            message(FATAL_ERROR "Can't generate GRPC, error code: ${return_code}")
+            return()
+        endif()
 
     endforeach()
 
