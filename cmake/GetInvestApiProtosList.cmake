@@ -1,6 +1,10 @@
-set(InvestApiProtosDir "${CMAKE_SOURCE_DIR}/deps/investAPI/src/docs/contracts")
+set(InvestApiProtosDir "${CMAKE_CURRENT_LIST_DIR}/../deps/investAPI/src/docs/contracts")
 set(InvestApiProtosOutDir "${CMAKE_SOURCE_DIR}/src/protos")
 file(GLOB InvestApiSrcProtos "${InvestApiProtosDir}/*.proto")
+
+if(NOT InvestApiSrcProtos)
+    message(FATAL_ERROR "Empty invest api src protos")
+endif()
 
 # Proto файлы содержат в строке "package tinkoff.public.invest.api.*"
 # ключево словое С++ public, которое попадает в namespace.
@@ -17,3 +21,7 @@ foreach (srcFilePath ${InvestApiSrcProtos})
 endforeach (srcFilePath ${InvestApiSrcProtos})
 
 file(GLOB InvestApiProtos "${InvestApiProtosOutDir}/*.proto")
+
+if(NOT InvestApiProtos)
+    message(FATAL_ERROR "Empty invest api protos")
+endif()

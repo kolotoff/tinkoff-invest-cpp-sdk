@@ -1,5 +1,7 @@
 #include "Examples.hpp"
 
+#include <protos/users.grpc.pb.h>
+
 int main(int /*argc*/, const char** /*argv*/)
 {
 #ifdef _WIN32

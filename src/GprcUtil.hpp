@@ -2,8 +2,9 @@
 #define GPRCUTIL_HPP
 
 #include <google/protobuf/util/json_util.h>
-#include <Credentials.hpp>
+#include <grpcpp/create_channel.h>
 
+#include <Credentials.hpp>
 
 class GprcUtil
 {

@@ -9,7 +9,6 @@ if(MSVC)
 endif()
 
 find_package(Boost 1.78.0 REQUIRED)
-find_package(OpenSSL 1.1.0 REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 
@@ -20,7 +19,7 @@ message("PROTOBUF Found: ${Protobuf_FOUND} ${Protobuf_VERSION}")
 
 add_subdirectory(deps/asio-grpc)
 
-include_directories("src") 
+include_directories(src) 
 
 if(MSVC)
     add_compile_options(/bigobj)
@@ -97,8 +96,6 @@ function(tinkoff_invest_sdk_add_example example_name)
     target_sources(${example_name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/examples/${example_name}.cpp")
 
     if(MSVC)
-        set(OPENSSL_PATH_STR ${OPENSSL_ROOT_DIR}/bin)
-        set(PATH_STR "PATH=%PATH%" ${OPENSSL_PATH_STR})
         set_target_properties(${example_name} PROPERTIES VS_DEBUGGER_ENVIRONMENT "${PATH_STR}")
         set_target_properties(${example_name} PROPERTIES LINK_FLAGS "/INCREMENTAL")
 
@@ -108,7 +105,6 @@ function(tinkoff_invest_sdk_add_example example_name)
 
     target_link_libraries(${example_name} PRIVATE tinkoff_api_protos)
     target_link_libraries(${example_name} PRIVATE gRPC::grpc++ gRPC::grpc++_reflection)
-    target_link_libraries(${example_name} PRIVATE OpenSSL::SSL OpenSSL::Crypto)
     target_link_libraries(${example_name} PRIVATE asio-grpc::asio-grpc)
 endfunction()
 

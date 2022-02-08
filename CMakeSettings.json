@@ -2,7 +2,6 @@
   "environments": [
     {
       "BOOST_DIR": "d:\\Develop\\SDK\\Boost\\boost_1_78_0",
-      "OPENSSL_DIR": "d:\\Develop\\SDK\\OpenSSL\\openssl-1.1\\x64",
       "GRPC_DIR": "d:\\Develop\\Sources\\AlcoTrader\\tinkoff-invest-cpp-sdk\\deps\\grpc_build_msvc"
     }
   ],
@@ -61,11 +60,6 @@
         {
           "name": "BOOST_ROOT",
           "value": "${env.BOOST_DIR}",
-          "type": "STRING"
-        },
-        {
-          "name": "OPENSSL_ROOT",
-          "value": "${env.OPENSSL_DIR}",
           "type": "STRING"
         },
         {
