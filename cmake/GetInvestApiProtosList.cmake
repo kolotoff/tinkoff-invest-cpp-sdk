@@ -1,5 +1,5 @@
 set(InvestApiProtosDir "${CMAKE_CURRENT_LIST_DIR}/../deps/investAPI/src/docs/contracts")
-set(InvestApiProtosOutDir "${CMAKE_SOURCE_DIR}/src/protos")
+set(InvestApiProtosOutDir "${CMAKE_CURRENT_LIST_DIR}/../src/protos")
 file(GLOB InvestApiSrcProtos "${InvestApiProtosDir}/*.proto")
 
 if(NOT InvestApiSrcProtos)

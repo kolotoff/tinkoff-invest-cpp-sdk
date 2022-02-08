@@ -96,7 +96,6 @@ function(tinkoff_invest_sdk_add_example example_name)
     target_sources(${example_name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/examples/${example_name}.cpp")
 
     if(MSVC)
-        set_target_properties(${example_name} PROPERTIES VS_DEBUGGER_ENVIRONMENT "${PATH_STR}")
         set_target_properties(${example_name} PROPERTIES LINK_FLAGS "/INCREMENTAL")
 
         #For MSVC avoid default /Debug or /Release created folder
