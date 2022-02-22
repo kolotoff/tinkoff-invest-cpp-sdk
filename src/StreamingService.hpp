@@ -14,73 +14,110 @@ public:
   using Method = GprcService::Stub;
 
   template <class Request, class Response>
-  using Stream = std::unique_ptr<grpc::ClientAsyncReaderWriter<Request, Response>>;
+  using ReaderWriter = std::unique_ptr<grpc::ClientAsyncReaderWriter<Request, Response>>;
+
   template <class Response>
   using Result = GprcUtil::Result<Response>;
+
+  template <class Request, class Response>
+  class Stream
+  {
+    friend class StreamingService;
+
+    GprcUtil::Limits limits;
+    std::string trackingId;
+    Response response;
+
+  public:
+    Stream(const Credentials& credentials)
+    {
+      stub_ = GprcUtil::makeStub<GprcService>(credentials);
+      clientContext_ = GprcUtil::makeContext(credentials);;
+    }
+    ~Stream() = default;
+
+    bool ready() const { return ready_; }
+
+    boost::asio::awaitable<void> finish()
+    {
+      co_await agrpc::writes_done(*readerWriter_);
+      grpc::Status status;
+      bool finishOk = co_await agrpc::finish(*readerWriter_, status);
+      ready_ = false;
+    }
+
+
+    boost::asio::awaitable<std::pair<bool, Response>> read()
+    {
+      std::pair<bool, Response> result;
+
+      bool readOk = co_await agrpc::read(*readerWriter_, result.second);
+      if (readOk)
+      {
+        auto json = GprcUtil::messageToString(response);
+        std::cout << std::endl << "Response: " << std::endl << json << std::endl;
+      }
+
+      result.first = readOk;
+
+      co_return result;
+    }
+
+  private:
+    template<class Request, class Method>
+    boost::asio::awaitable<bool> start(Method method, const Request& request)
+    {
+      bool requestOk = co_await agrpc::request(method, *stub_, *clientContext_, readerWriter_);
+
+      if (requestOk)
+      {
+        ready_ = co_await agrpc::write(*readerWriter_, request);
+      }
+
+      co_return ready_;
+    }
+
+  private:
+    std::unique_ptr<Method> stub_;
+    std::unique_ptr<grpc::ClientContext> clientContext_;
+    ReaderWriter<Request, Response> readerWriter_;
+    bool ready_ = false;
+
+  };
 
 public:
   StreamingService(const Credentials& credentials)
     : credentials_(credentials)
   {
-    stub_ = GprcUtil::makeStub<GprcService>(credentials_);
   }
 
   ~StreamingService() = default;
 
   template<class Request, class Response>
-  Request makeRequest(Stream<Request, Response>(Method::*)(grpc::ClientContext*, grpc::CompletionQueue*, void*))
+  Request makeRequest(ReaderWriter<Request, Response>(Method::*)(grpc::ClientContext*, grpc::CompletionQueue*, void*))
   {
     Request request;
     return request;
   }
 
   template<class Request, class Response>
-  boost::asio::awaitable<Result<Response>> start(Stream<Request, Response>(Method::* method)(grpc::ClientContext*, grpc::CompletionQueue*, void*)
-    , const Request& request/*, std::function<void(const Response&)> parser*/)
+  boost::asio::awaitable<std::unique_ptr<Stream<Request, Response>>> start(ReaderWriter<Request, Response>(Method::* method)(grpc::ClientContext*, grpc::CompletionQueue*, void*)
+    , const Request& request)
   {
-    Result<Response> result;
-
-    auto clientContext = GprcUtil::makeContext(credentials_);
-
-    const auto executor = co_await boost::asio::this_coro::executor;
-
-    Stream<Request, Response> stream;
-
-    bool requestOk = co_await agrpc::request(method, *stub_, *clientContext, stream);
- 
-    if (requestOk)
-    {
-      bool writeOk = co_await agrpc::write(*stream, request);
-      if (writeOk)
-      {
-        bool readOk = true;
-        while (readOk)
-        {
-          Response response;
-          readOk = co_await agrpc::read(*stream, response);
-          if (readOk)
-          {
-            auto json = GprcUtil::messageToString(response);
-            std::cout << std::endl << "Response: " << std::endl << json << std::endl;
-            //parser(response);
-          }
-        }
-      }
-    }
-
-    co_await agrpc::writes_done(*stream);
-    bool finishOk = co_await agrpc::finish(*stream, result.status);
+    auto stream = std::make_unique<Stream<Request, Response>>(credentials_);
 
     GprcUtil::logRequest(request);
-    GprcUtil::populateResult(result, clientContext);
-    GprcUtil::logResult(result);
 
-    co_return result;
+    if (co_await stream->start(method, request))
+    {
+      co_return stream;
+    }
+
+    co_return nullptr;
   }
 
 private:
   const Credentials& credentials_;
-  std::unique_ptr<Method> stub_;
 
 };
 

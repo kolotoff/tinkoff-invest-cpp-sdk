@@ -2,6 +2,8 @@
 
 #include <protos/marketdata.grpc.pb.h>
 
+#include <StreamingService.hpp>
+
 int main(int /*argc*/, const char** /*argv*/)
 {
 #ifdef _WIN32
@@ -46,8 +48,14 @@ int main(int /*argc*/, const char** /*argv*/)
       instrument->set_interval(contract::v1::SubscriptionInterval::SUBSCRIPTION_INTERVAL_ONE_MINUTE);
     }
     
-    auto result = co_await marketDataStreamService.start(method, request);
-    errorCode = result.status.error_code();
+    auto stream = co_await marketDataStreamService.start(method, request);
+    if (stream)
+    {
+      while (stream->ready())
+      {
+        auto [readOk, result] = co_await stream->read();
+      }
+    }
     
   },
   boost::asio::detached);

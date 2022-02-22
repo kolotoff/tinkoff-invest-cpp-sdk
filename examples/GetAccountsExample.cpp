@@ -2,6 +2,8 @@
 
 #include <protos/users.grpc.pb.h>
 
+#include <Service.hpp>
+
 int main(int /*argc*/, const char** /*argv*/)
 {
 #ifdef _WIN32
