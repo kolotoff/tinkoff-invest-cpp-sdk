@@ -1,8 +1,6 @@
 #ifndef STREAMINGSERVICE_HPP
 #define STREAMINGSERVICE_HPP
 
-#include <functional>
-
 #include <agrpc/asioGrpc.hpp>
 
 #include <GprcUtil.hpp>
@@ -26,7 +24,6 @@ public:
 
     GprcUtil::Limits limits;
     std::string trackingId;
-    Response response;
 
   public:
     Stream(const Credentials& credentials)
@@ -54,7 +51,7 @@ public:
       bool readOk = co_await agrpc::read(*readerWriter_, result.second);
       if (readOk)
       {
-        auto json = GprcUtil::messageToString(response);
+        auto json = GprcUtil::messageToString(result.second);
         std::cout << std::endl << "Response: " << std::endl << json << std::endl;
       }
 
@@ -110,7 +107,7 @@ public:
 
     if (co_await stream->start(method, request))
     {
-      co_return stream;
+      co_return std::move(stream);
     }
 
     co_return nullptr;

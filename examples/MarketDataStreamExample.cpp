@@ -1,16 +1,13 @@
 #include "Examples.hpp"
 
-#include <protos/marketdata.grpc.pb.h>
+#include <MarketDataStream.hpp>
 
-#include <StreamingService.hpp>
 
 int main(int /*argc*/, const char** /*argv*/)
 {
 #ifdef _WIN32
   SetConsoleOutputCP(CP_UTF8);
 #endif
-
-  using namespace tinkoff::Public::invest::api;
 
   Credentials credentials;
   if (!credentials.load())
@@ -21,44 +18,17 @@ int main(int /*argc*/, const char** /*argv*/)
 
   int errorCode = 0;
 
-  using MarketDataStreamService = StreamingService<contract::v1::MarketDataStreamService>;
-  MarketDataStreamService marketDataStreamService(credentials);
+  TinkoffInvest::MarketDataStream marketDataStream(credentials);
 
-  boost::asio::co_spawn(grpcExecutionContext, [&]() -> boost::asio::awaitable<void>
-  {
-    static const std::string appleFigi = "BBG000B9XRY4"; //Apple
-    static const std::string mvideoFigi = "BBG004S68CP5"; //MVID
-    static const std::string spyf3_22 = "FUTSPYF03220"; //SPYF-3.22
+  static const std::string appleFigi = "BBG000B9XRY4"; //Apple
+  static const std::string mvideoFigi = "BBG004S68CP5"; //MVID
+  static const std::string spyf3_22 = "FUTSPYF03220"; //SPYF-3.22
 
-    auto method = &MarketDataStreamService::Method::AsyncMarketDataStream;
-    auto request = marketDataStreamService.makeRequest(method);
+  marketDataStream.addInstrument(appleFigi);
+  marketDataStream.addInstrument(mvideoFigi);
+  marketDataStream.addInstrument(spyf3_22);
 
-    auto candlesRequest = request.mutable_subscribe_candles_request();
-    candlesRequest->set_subscription_action(contract::v1::SubscriptionAction::SUBSCRIPTION_ACTION_SUBSCRIBE);
-    
-    {
-      auto instrument = candlesRequest->add_instruments();
-      instrument->set_figi(spyf3_22);
-      instrument->set_interval(contract::v1::SubscriptionInterval::SUBSCRIPTION_INTERVAL_ONE_MINUTE);
-    }
-
-    {
-      auto instrument = candlesRequest->add_instruments();
-      instrument->set_figi(appleFigi);
-      instrument->set_interval(contract::v1::SubscriptionInterval::SUBSCRIPTION_INTERVAL_ONE_MINUTE);
-    }
-    
-    auto stream = co_await marketDataStreamService.start(method, request);
-    if (stream)
-    {
-      while (stream->ready())
-      {
-        auto [readOk, result] = co_await stream->read();
-      }
-    }
-    
-  },
-  boost::asio::detached);
+  marketDataStream.start(grpcExecutionContext);
 
   grpcExecutionContext.run();
 
